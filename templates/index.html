@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Atmos — Air Quality</title>
+
+<link rel="stylesheet"
+href="{{ url_for('static', filename='style.css') }}">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Fraunces:wght@300;700&display=swap"
+rel="stylesheet">
+
+</head>
+
+
+<body>
+
+<!-- NAV -->
+
+<nav class="nav">
+
+<div class="nav-left">
+
+<span class="nav-logo">
+atmos
+</span>
+
+<span class="nav-loc">
+● Sundernagar, HP
+</span>
+
+</div>
+
+
+<div class="nav-right">
+
+<span
+class="nav-time"
+id="nav-time">
+
+</span>
+
+<span class="nav-live">
+Live
+</span>
+
+</div>
+
+</nav>
+
+
+
+<!-- HERO -->
+
+<section class="hero">
+
+<div class="hero-left">
+
+<p class="hero-label">
+
+AIR QUALITY INDEX
+
+</p>
+
+
+<h1
+class="hero-aqi"
+id="aqi-value">
+
+—
+
+</h1>
+
+
+<span
+class="hero-status"
+id="aqi-status">
+
+Loading
+
+</span>
+
+
+<p class="hero-desc">
+
+Real-time air quality monitoring at JNGEC Sundernagar
+
+</p>
+
+</div>
+
+
+<div class="hero-right">
+
+<div id="map"></div>
+
+</div>
+
+</section>
+
+
+
+
+<!-- METRICS -->
+
+<section class="metrics">
+
+
+<div class="metric-card">
+
+<span class="metric-label">
+
+PM2.5
+
+</span>
+
+<span
+class="metric-value"
+id="pm25">
+
+—
+
+</span>
+
+<span class="metric-unit">
+
+µg/m³
+
+</span>
+
+</div>
+
+
+
+<div class="metric-card">
+
+<span class="metric-label">
+
+MQ135 GAS
+
+</span>
+
+<span
+class="metric-value"
+id="gas">
+
+—
+
+</span>
+
+<span class="metric-unit">
+
+ppm
+
+</span>
+
+</div>
+
+
+
+<div class="metric-card">
+
+<span class="metric-label">
+
+TEMPERATURE
+
+</span>
+
+<span
+class="metric-value"
+id="temp">
+
+—
+
+</span>
+
+<span class="metric-unit">
+
+°C
+
+</span>
+
+</div>
+
+
+
+<div class="metric-card">
+
+<span class="metric-label">
+
+HUMIDITY
+
+</span>
+
+<span
+class="metric-value"
+id="humidity">
+
+—
+
+</span>
+
+<span class="metric-unit">
+
+%
+
+</span>
+
+</div>
+
+
+
+<div class="metric-card">
+
+<span class="metric-label">
+
+WIND
+
+</span>
+
+<span
+class="metric-value"
+id="wind">
+
+—
+
+</span>
+
+<span class="metric-unit">
+
+km/h
+
+</span>
+
+</div>
+
+
+</section>
+
+
+
+
+
+<!-- AQI SCALE -->
+
+<section class="scale-section">
+
+<div class="scale-wrap">
+
+<div class="scale-bar">
+
+<div
+class="scale-indicator"
+id="scale-indicator">
+
+</div>
+
+</div>
+
+
+
+<div class="scale-labels">
+
+<span>
+
+GOOD
+
+<br>
+
+<small>
+0–50
+</small>
+
+</span>
+
+
+
+<span>
+
+MODERATE
+
+<br>
+
+<small>
+51–100
+</small>
+
+</span>
+
+
+
+<span>
+
+UNHEALTHY
+
+<br>
+
+<small>
+101–150
+</small>
+
+</span>
+
+
+
+<span>
+
+HAZARDOUS
+
+<br>
+
+<small>
+150+
+</small>
+
+</span>
+
+</div>
+
+</div>
+
+</section>
+
+
+
+
+<!-- CHARTS -->
+
+<section class="charts">
+
+
+<div class="chart-block">
+
+<div class="chart-title">
+
+<span>
+
+Pollution Telemetry
+
+</span>
+
+<small>
+
+PM2.5 & MQ135 over time
+
+</small>
+
+</div>
+
+
+<canvas id="chart">
+
+</canvas>
+
+</div>
+
+
+
+
+<div class="chart-block">
+
+<div class="chart-title">
+
+<span>
+
+AQI Forecast
+
+</span>
+
+<small>
+
+Predicted future AQI
+
+</small>
+
+</div>
+
+
+<canvas id="forecastChart">
+
+</canvas>
+
+</div>
+
+
+</section>
+
+
+
+
+
+
+
+<!-- HISTORICAL MODEL COMPARISON -->
+<section class="model-eval-section">
+  <div class="model-eval-heading">
+    <div>
+      <p class="hero-label">MACHINE LEARNING EVALUATION</p>
+      <h2>Does calibration improve next-hour PM2.5 forecasting?</h2>
+      <p class="model-eval-subtitle">Historical held-out test-set results from the calibration and forecasting notebook. These are evaluation results, not live readings.</p>
+    </div>
+    <span class="eval-badge">Historical test results</span>
+  </div>
+
+  <div class="improvement-cards">
+    <div class="improvement-card"><span class="metric-label">RMSE REDUCTION</span><strong id="rmse-improvement">15.3%</strong><small>Lower error with calibrated input</small></div>
+    <div class="improvement-card"><span class="metric-label">MAE REDUCTION</span><strong id="mae-improvement">20.4%</strong><small>Lower average absolute error</small></div>
+    <div class="improvement-card"><span class="metric-label">R² CHANGE</span><strong id="r2-improvement">+0.071</strong><small>Raw model to calibrated model</small></div>
+  </div>
+
+  <div class="model-eval-charts">
+    <div class="chart-block">
+      <div class="chart-title"><span>Forecast Error</span><small>RMSE and MAE, µg/m³. Lower is better.</small></div>
+      <canvas id="errorComparisonChart"></canvas>
+    </div>
+    <div class="chart-block">
+      <div class="chart-title"><span>R² Score</span><small>Higher is better. Shows model fit on the test set.</small></div>
+      <canvas id="r2ComparisonChart"></canvas>
+    </div>
+  </div>
+
+  <div class="model-prediction-chart chart-block">
+    <div class="chart-title"><span>Actual vs. model predictions</span><small>Historical held-out test period · PM2.5 (µg/m³)</small></div>
+    <canvas id="modelPredictionChart"></canvas>
+    <p class="model-eval-subtitle">The chart uses predictions generated by the saved pickle models on historical test data. It is not a live forecast.</p>
+  </div>
+
+  <div class="model-prediction-chart chart-block">
+    <div class="chart-title"><span>Historical AQI forecast: actual vs. model</span><small>PM2.5-derived AQI estimate · historical held-out test period</small></div>
+    <canvas id="historicalAqiForecastChart"></canvas>
+    <p class="model-eval-subtitle">AQI values are converted from the actual and predicted PM2.5 values using this dashboard's existing PM2.5-to-AQI function. This is a PM2.5-based estimate, not an official overall Indian AQI calculation from all pollutants, and it is historical model evaluation rather than a live future forecast.</p>
+  </div>
+
+  <div class="results-table-wrap">
+    <h3>Test-set metrics</h3>
+    <div class="table-scroll"><table class="results-table">
+      <thead><tr><th>Model</th><th>RMSE ↓</th><th>MAE ↓</th><th>R² ↑</th></tr></thead>
+      <tbody id="model-results-body"><tr><td>Persistence baseline</td><td>14.28</td><td>7.31</td><td>0.902</td></tr><tr><td>Raw-input model</td><td>22.84</td><td>16.46</td><td>0.748</td></tr><tr><td>Calibrated-input model</td><td>19.34</td><td>13.10</td><td>0.820</td></tr></tbody>
+    </table></div>
+  </div>
+</section>
+
+
+<!-- FOOTER -->
+
+<footer class="footer">
+
+<span>
+
+Atmos AQI Monitor
+
+</span>
+
+
+<span>
+
+JNGEC Sundernagar · Himachal Pradesh
+
+</span>
+
+
+<span id="footer-weather">
+
+</span>
+
+</footer>
+
+
+
+<script src=
+"{{ url_for('static', filename='script.js') }}">
+</script>
+
+</body>
+
+</html>

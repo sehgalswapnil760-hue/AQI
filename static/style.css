@@ -1,0 +1,544 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Fraunces:wght@300;700&display=swap');
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+:root{
+
+--bg:#f7f6f2;
+--surface:#fff;
+--border:#e8e6e0;
+
+--text:#1a1917;
+--muted:#9a9790;
+
+--good:#16a34a;
+--moderate:#ca8a04;
+--poor:#ea580c;
+--hazard:#dc2626;
+
+}
+
+body{
+
+font-family:'DM Sans';
+
+background:var(--bg);
+
+color:var(--text);
+
+min-height:100vh;
+
+}
+
+
+
+/* ================= NAV ================= */
+
+.nav{
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+padding:20px 48px;
+
+background:white;
+
+border-bottom:1px solid var(--border);
+
+}
+
+.nav-logo{
+
+font-size:22px;
+
+font-family:'Fraunces';
+
+font-weight:700;
+
+}
+
+.nav-time{
+
+font-size:13px;
+
+font-family:'DM Mono';
+
+color:var(--muted);
+
+}
+
+.nav-live{
+
+padding:6px 14px;
+
+border-radius:20px;
+
+background:#dcfce7;
+
+color:green;
+
+font-size:12px;
+
+}
+
+
+
+
+/* ================= HERO ================= */
+
+.hero{
+
+display:grid;
+
+grid-template-columns:1fr 1fr;
+
+min-height:420px;
+
+border-bottom:1px solid var(--border);
+
+}
+
+.hero-left{
+
+padding:60px 48px;
+
+display:flex;
+
+flex-direction:column;
+
+justify-content:center;
+
+}
+
+.hero-label{
+
+font-size:11px;
+
+font-family:'DM Mono';
+
+letter-spacing:2px;
+
+color:var(--muted);
+
+margin-bottom:16px;
+
+}
+
+.hero-aqi{
+
+font-size:110px;
+
+font-family:'Fraunces';
+
+font-weight:700;
+
+line-height:1;
+
+}
+
+.hero-status{
+
+margin-top:18px;
+
+font-size:14px;
+
+font-family:'DM Mono';
+
+}
+
+.hero-desc{
+
+margin-top:24px;
+
+color:var(--muted);
+
+line-height:1.7;
+
+}
+
+
+
+#map{
+
+height:100%;
+
+min-height:420px;
+
+filter:
+
+brightness(1)
+
+saturate(.7);
+
+}
+
+
+
+
+/* ================= METRICS ================= */
+
+.metrics{
+
+display:grid;
+
+grid-template-columns:
+
+repeat(5,1fr);
+
+background:white;
+
+}
+
+.metric-card{
+
+padding:28px;
+
+border-right:
+
+1px solid var(--border);
+
+}
+
+.metric-value{
+
+font-size:32px;
+
+font-family:'Fraunces';
+
+font-weight:700;
+
+}
+
+.metric-label{
+
+font-size:10px;
+
+font-family:'DM Mono';
+
+color:var(--muted);
+
+margin-bottom:8px;
+
+}
+
+
+
+
+/* ================= AQI SCALE ================= */
+
+.scale-section{
+
+padding:28px 48px;
+
+background:white;
+
+border-top:
+
+1px solid var(--border);
+
+}
+
+
+.scale-bar{
+
+width:100%;
+
+height:8px;
+
+border-radius:50px;
+
+background:
+
+linear-gradient(
+
+to right,
+
+green,
+
+orange,
+
+red
+
+);
+
+position:relative;
+
+}
+
+
+.scale-indicator{
+
+position:absolute;
+
+width:12px;
+
+height:12px;
+
+border-radius:50%;
+
+background:black;
+
+top:-2px;
+
+left:0;
+
+transition:left .5s;
+
+}
+
+
+
+/* FIXED LABELS */
+
+.scale-labels{
+
+display:flex;
+
+justify-content:space-between;
+
+margin-top:14px;
+
+width:100%;
+
+font-family:'DM Mono';
+
+font-size:11px;
+
+color:var(--muted);
+
+text-transform:uppercase;
+
+}
+
+
+.scale-labels div{
+
+display:flex;
+
+flex-direction:column;
+
+align-items:center;
+
+flex:1;
+
+text-align:center;
+
+}
+
+
+.scale-labels small{
+
+margin-top:4px;
+
+font-size:10px;
+
+opacity:.7;
+
+}
+
+
+
+
+
+/* ================= CHARTS ================= */
+
+.charts{
+
+display:grid;
+
+grid-template-columns:
+
+1fr 1fr;
+
+background:white;
+
+border-top:
+
+1px solid var(--border);
+
+}
+
+.chart-block{
+
+padding:32px;
+
+border-right:
+
+1px solid var(--border);
+
+}
+
+.chart-title{
+
+margin-bottom:24px;
+
+}
+
+.chart-title span{
+
+font-size:22px;
+
+font-family:'Fraunces';
+
+}
+
+.chart-title small{
+
+display:block;
+
+margin-top:6px;
+
+font-size:11px;
+
+font-family:'DM Mono';
+
+color:var(--muted);
+
+}
+
+canvas{
+
+width:100%!important;
+
+height:240px!important;
+
+}
+
+
+
+
+
+/* ================= FOOTER ================= */
+
+.footer{
+
+display:flex;
+
+justify-content:space-between;
+
+padding:20px 48px;
+
+background:white;
+
+font-family:'DM Mono';
+
+font-size:12px;
+
+color:var(--muted);
+
+}
+
+
+
+
+/* ================= STATUS ================= */
+
+.status-good{
+
+color:green;
+
+}
+
+.status-moderate{
+
+color:orange;
+
+}
+
+.status-poor{
+
+color:#ea580c;
+
+}
+
+.status-hazard{
+
+color:red;
+
+}
+
+
+
+
+
+/* ================= MOBILE ================= */
+
+@media(max-width:900px){
+
+.hero{
+
+grid-template-columns:1fr;
+
+}
+
+.metrics{
+
+grid-template-columns:
+
+repeat(2,1fr);
+
+}
+
+.charts{
+
+grid-template-columns:1fr;
+
+}
+
+.hero-aqi{
+
+font-size:80px;
+
+}
+
+.footer{
+
+flex-direction:column;
+
+gap:10px;
+
+text-align:center;
+
+}
+
+.nav{
+
+padding:16px 24px;
+
+}
+
+}
+
+/* ================= HISTORICAL MODEL EVALUATION ================= */
+.model-eval-section { padding: 44px 48px 48px; background: var(--bg); border-top: 1px solid var(--border); }
+.model-eval-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 26px; }
+.model-eval-heading h2 { font-family: 'Fraunces'; font-size: clamp(26px, 3vw, 38px); line-height: 1.15; max-width: 780px; margin: 8px 0 12px; }
+.model-eval-subtitle { color: var(--muted); line-height: 1.6; max-width: 760px; font-size: 14px; }
+.eval-badge { white-space: nowrap; background: #e8eefc; color: #244b9b; border-radius: 20px; padding: 8px 12px; font: 11px 'DM Mono'; }
+.improvement-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+.improvement-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 8px; }
+.improvement-card strong { font: 700 36px 'Fraunces'; color: var(--good); }
+.improvement-card small { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.model-eval-charts { display: grid; grid-template-columns: 1fr 1fr; background: white; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.model-eval-charts .chart-block { min-width: 0; border-bottom: 1px solid var(--border); }
+.model-eval-charts canvas { height: 280px !important; }
+.results-table-wrap { margin-top: 18px; background: white; padding: 24px; border: 1px solid var(--border); border-radius: 12px; }
+.results-table-wrap h3 { font: 700 22px 'Fraunces'; margin-bottom: 16px; }
+.table-scroll { overflow-x: auto; }
+.results-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+.results-table th, .results-table td { padding: 13px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.results-table th { color: var(--muted); font: 11px 'DM Mono'; text-transform: uppercase; }
+.results-table tbody tr:last-child td { border-bottom: 0; }
+.results-table tbody tr:last-child { background: #f0fdf4; font-weight: 600; }
+.evaluation-note { margin-top: 16px; padding: 18px 20px; background: #fff7ed; color: #7c2d12; border: 1px solid #fed7aa; border-radius: 10px; font-size: 13px; line-height: 1.7; }
+@media(max-width:900px) { .model-eval-section { padding: 30px 20px; } .model-eval-heading { flex-direction: column; } .improvement-cards { grid-template-columns: 1fr; } .model-eval-charts { grid-template-columns: 1fr; } .model-eval-charts .chart-block { border-right: 0; } }
+
+.model-prediction-chart { margin-top: 18px; }
+.model-prediction-chart canvas { width: 100% !important; height: 330px !important; }
