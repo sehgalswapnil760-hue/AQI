@@ -144,6 +144,8 @@ def update():
         mq135 = optional_number(d, 'mq135', 0, 4095)
         if mq135 is None:
             mq135 = optional_number(d, 'mq135_adc', 0, 4095)
+        if mq135 is None:
+            mq135 = optional_number(d, 'gas', 0, 4095)
         lpr = optional_number(d, 'zph02_lpr_pct', 0, 100)
         volts = optional_number(d, 'mq135_volts', 0, 5.5)
         gas_ratio = optional_number(d, 'gas_ratio', 0, 1e9)
@@ -398,7 +400,13 @@ def read_historical_rows(csv_path, site, limit=300):
     if not rows:
         raise ValueError(f'No held-out rows for site {site!r}. Choose Hamirpur, Delhi or Bangalore.')
     step = max(1, int(np.ceil(len(rows) / limit)))
-    return rows[::step][-limit:], len(rows)
+    sample = rows[::step]
+    if sample[-1] is not rows[-1]:
+        if len(sample) == limit:
+            sample[-1] = rows[-1]
+        else:
+            sample.append(rows[-1])
+    return sample, len(rows)
 
 
 @app.route('/dataset-calibration-evaluation')
