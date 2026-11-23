@@ -1,45 +1,113 @@
+
 import pandas as pd
-from sklearn.linear_model import LinearRegression
+import numpy as np
 import joblib
 
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import (
+    mean_absolute_error,
+    mean_squared_error,
+    r2_score
+)
 
-data = {
+# =====================================
+# LOAD TRAINING DATA
+# =====================================
 
-"pm25":[10,20,30,40,50,60,70,80],
+# CSV must contain:
+# pm25, mq135, voc, aqi
+df = pd.read_csv("aqi_training_data.csv")
 
-"mq135":[100,120,140,160,180,200,220,240],
+features = ["pm25", "mq135", "voc"]
+target = "aqi"
 
-"voc":[5,10,15,20,25,30,35,40],
+df = df.dropna(subset=features + [target])
 
-"aqi":[20,40,60,80,100,120,140,160]
+if len(df) < 20:
+    raise ValueError(
+        "Insufficient training samples. "
+        "Collect more real sensor data."
+    )
 
-}
+X = df[features]
+y = df[target]
 
+# =====================================
+# TRAIN / TEST SPLIT
+# =====================================
 
-df = pd.DataFrame(data)
+X_train, X_test, y_train, y_test = (
+    train_test_split(
+        X,
+        y,
+        test_size=0.2,
+        random_state=42
+    )
+)
 
-X = df[[
-"pm25",
-"mq135",
-"voc"
-]]
+# =====================================
+# TRAIN MODEL
+# =====================================
 
-y = df["aqi"]
+model = LinearRegression()
 
+model.fit(X_train, y_train)
 
-model =LinearRegression()
+# =====================================
+# EVALUATE MODEL
+# =====================================
 
-model.fit(X,y)
+predictions = model.predict(X_test)
 
+mae = mean_absolute_error(
+    y_test, predictions
+)
+
+rmse = np.sqrt(
+    mean_squared_error(
+        y_test, predictions
+    )
+)
+
+r2 = r2_score(
+    y_test, predictions
+)
+
+print("MODEL PERFORMANCE")
+print("MAE:", round(mae, 3))
+print("RMSE:", round(rmse, 3))
+print("R2:", round(r2, 3))
+
+# =====================================
+# SAVE MODEL
+# =====================================
 
 joblib.dump(
+    model,
+    "aqi_model.pkl"
+)
 
-model,
+print("Model saved successfully")
 
-"aqi_model.pkl"
+# =====================================
+# TEST PREDICTION
+# =====================================
 
+sample = pd.DataFrame(
+    [[35, 1105, 20]],
+    columns=features
+)
+
+predicted_aqi = model.predict(sample)[0]
+
+predicted_aqi = np.clip(
+    predicted_aqi,
+    0,
+    500
 )
 
 print(
-"Model saved"
+    "Predicted AQI:",
+    round(predicted_aqi)
 )
