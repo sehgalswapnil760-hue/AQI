@@ -1,0 +1,127 @@
+{
+  "dataset": "BAM_PM25_Dataset.csv",
+  "total_valid_paired_rows": 18584,
+  "time_min": "2018-07-24T06:30:00",
+  "time_max": "2021-01-11T22:30:00",
+  "calibration": {
+    "Bangalore": {
+      "rows": 7441,
+      "train_and_validation_rows": 6324,
+      "held_out_test_rows": 1117,
+      "test_range": [
+        "2020-04-25T21:30:00",
+        "2020-07-31T17:30:00"
+      ],
+      "selected_model": "linear",
+      "validation_mae_candidates": {
+        "linear": 3.8657,
+        "hist_gradient_boosting": 4.2211
+      },
+      "raw_unadjusted_test": {
+        "mae": 7.8209,
+        "rmse": 10.7277,
+        "r2": -0.3611,
+        "bias_pred_minus_ref": 6.0669
+      },
+      "dataset_calibrated_test": {
+        "mae": 3.6417,
+        "rmse": 4.6682,
+        "r2": 0.7423,
+        "bias_pred_minus_ref": -1.1239
+      }
+    },
+    "Delhi": {
+      "rows": 7504,
+      "train_and_validation_rows": 6378,
+      "held_out_test_rows": 1126,
+      "test_range": [
+        "2019-10-23T07:30:00",
+        "2020-01-03T14:30:00"
+      ],
+      "selected_model": "linear",
+      "validation_mae_candidates": {
+        "linear": 17.1526,
+        "hist_gradient_boosting": 17.4318
+      },
+      "raw_unadjusted_test": {
+        "mae": 87.7992,
+        "rmse": 100.6921,
+        "r2": -0.0992,
+        "bias_pred_minus_ref": 86.3578
+      },
+      "dataset_calibrated_test": {
+        "mae": 40.061,
+        "rmse": 59.0527,
+        "r2": 0.6219,
+        "bias_pred_minus_ref": -30.4404
+      }
+    },
+    "Hamirpur": {
+      "rows": 3639,
+      "train_and_validation_rows": 3093,
+      "held_out_test_rows": 546,
+      "test_range": [
+        "2020-10-08T17:30:00",
+        "2021-01-11T22:30:00"
+      ],
+      "selected_model": "linear",
+      "validation_mae_candidates": {
+        "linear": 7.3966,
+        "hist_gradient_boosting": 7.4423
+      },
+      "raw_unadjusted_test": {
+        "mae": 101.2429,
+        "rmse": 115.1548,
+        "r2": -3.9371,
+        "bias_pred_minus_ref": 101.2429
+      },
+      "dataset_calibrated_test": {
+        "mae": 8.7466,
+        "rmse": 12.7333,
+        "r2": 0.9396,
+        "bias_pred_minus_ref": -0.4546
+      }
+    }
+  },
+  "reference_forecasting": {
+    "selected_model": "hist_gradient_boosting",
+    "validation_mae_candidates": {
+      "ridge": 7.7085,
+      "hist_gradient_boosting": 7.6685
+    },
+    "available_sequences_by_site": {
+      "Bangalore": {
+        "total_sequences": 1448,
+        "held_out_test": 218
+      },
+      "Delhi": {
+        "total_sequences": 4423,
+        "held_out_test": 664
+      },
+      "Hamirpur": {
+        "total_sequences": 169,
+        "held_out_test": 26
+      }
+    },
+    "held_out_test_rows": 908,
+    "persistence_test": {
+      "mae": 14.4285,
+      "rmse": 23.1666,
+      "r2": 0.9347,
+      "bias_pred_minus_ref": -1.1911
+    },
+    "forecast_test": {
+      "mae": 14.4839,
+      "rmse": 22.8967,
+      "r2": 0.9362,
+      "bias_pred_minus_ref": -1.0518
+    },
+    "note": "Only historical forecasting performance. No station data after 2021; cannot generate a current forecast from these files alone."
+  },
+  "important": [
+    "Calibration models refer only to the dataset's paired optical sensor and BAM monitor by site.",
+    "Do not apply these models directly to ATMOS ZPH02 without its own paired reference evaluation.",
+    "Source contains historical observations, not live air quality or a validated current forecast.",
+    "PM2.5-only AQI estimates are not official overall air quality indices."
+  ]
+}
