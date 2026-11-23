@@ -493,23 +493,13 @@ JNGEC Sundernagar · Himachal Pradesh
   #atmos-cal-add-on .atmos-cal-big { font-size: 2rem; font-weight: 750; margin: 12px 0; }
   #atmos-cal-add-on .atmos-cal-note { opacity: .7; font-size: .8rem; line-height: 1.5; }
 </style>
-<section id="atmos-cal-add-on" aria-label="ATMOS calibration and reference model">
-  <h2>Calibration &amp; reference model</h2>
+<section id="atmos-cal-add-on" aria-label="Live sensor calibration">
+  <h2>Live sensor calibration</h2>
   <div class="atmos-cal-grid">
     <article class="atmos-cal-card">
       <div class="atmos-cal-label">Calibrated AQI — ATMOS ZPH02 (live)</div>
       <div class="atmos-cal-big" id="atmos-live-cal-aqi">N/A</div>
       <div class="atmos-cal-note" id="atmos-live-cal-status">Awaiting matching ZPH02 and reference measurements</div>
-    </article>
-    <article class="atmos-cal-card">
-      <div class="atmos-cal-label">Historical dataset-calibrated AQI estimate — Hamirpur</div>
-      <div class="atmos-cal-big" id="atmos-historical-cal-aqi">Loading…</div>
-      <div class="atmos-cal-note" id="atmos-historical-cal-caption">Different optical sensor; historical test data, NOT live ATMOS</div>
-    </article>
-    <article class="atmos-cal-card">
-      <div class="atmos-cal-label">Historical reference forecast AQI estimate — Hamirpur</div>
-      <div class="atmos-cal-big" id="atmos-reference-historical-aqi">Loading…</div>
-      <div class="atmos-cal-note" id="atmos-reference-forecast-caption">Historical held-out test example, NOT current air quality</div>
     </article>
   </div>
   <p class="atmos-cal-note">AQI numbers are approximate PM2.5-only indices calculated using the existing ATMOS conversion; not official CPCB overall AQI. Official PM2.5 AQI uses 24-hour averages.</p>
@@ -538,23 +528,7 @@ JNGEC Sundernagar · Himachal Pradesh
       set('atmos-live-cal-status', 'Live API unavailable: ' + error.message);
     }
   }
-  async function setHistorical(endpoint, valueId, captionId, valueKey, label) {
-    try {
-      const response = await fetch(endpoint);
-      if (!response.ok) throw new Error('HTTP ' + response.status);
-      const d = await response.json();
-      const row = d.latest_example;
-      if (!row) throw new Error('No test records');
-      set(valueId, show(row[valueKey]));
-      set(captionId, label + ' | sample: ' + row.time + ' | NOT a live reading');
-    } catch (error) {
-      set(valueId, 'N/A');
-      set(captionId, 'Historical results unavailable: ' + error.message);
-    }
-  }
   refreshLive();
-  setHistorical('/historical-dataset-calibration?site=Hamirpur', 'atmos-historical-cal-aqi', 'atmos-historical-cal-caption', 'dataset_calibrated_aqi_estimate', 'Hamirpur dataset calibration');
-  setHistorical('/historical-reference-forecast?site=Hamirpur', 'atmos-reference-historical-aqi', 'atmos-reference-forecast-caption', 'forecast_aqi_estimate', 'Hamirpur model forecast');
   setInterval(refreshLive, 15000);
 })();
 </script>
