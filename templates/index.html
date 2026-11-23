@@ -560,7 +560,83 @@ JNGEC Sundernagar · Himachal Pradesh
 <script src=
 "{{ url_for('static', filename='script.js') }}">
 </script>
-
+<!-- ATMOS calibrated AQI add-on
+     Paste this entire block immediately before </body> in your EXISTING
+     templates/index.html. It does not change your existing AQI tile. -->
+<style>
+  #atmos-cal-add-on { max-width: 1080px; margin: 24px auto; padding: 0 12px; font-family: inherit; color: inherit; }
+  #atmos-cal-add-on h2 { margin: 0 0 8px; font-size: 1.2rem; }
+  #atmos-cal-add-on .atmos-cal-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap: 14px; }
+  #atmos-cal-add-on .atmos-cal-card { padding: 20px; border-radius: 16px; background: rgba(100,116,139,.14); border: 1px solid rgba(148,163,184,.3); }
+  #atmos-cal-add-on .atmos-cal-label { font-size: .85rem; opacity: .85; line-height: 1.5; }
+  #atmos-cal-add-on .atmos-cal-big { font-size: 2rem; font-weight: 750; margin: 12px 0; }
+  #atmos-cal-add-on .atmos-cal-note { opacity: .7; font-size: .8rem; line-height: 1.5; }
+</style>
+<section id="atmos-cal-add-on" aria-label="ATMOS calibration and reference model">
+  <h2>Calibration &amp; reference model</h2>
+  <div class="atmos-cal-grid">
+    <article class="atmos-cal-card">
+      <div class="atmos-cal-label">Calibrated AQI — ATMOS ZPH02 (live)</div>
+      <div class="atmos-cal-big" id="atmos-live-cal-aqi">N/A</div>
+      <div class="atmos-cal-note" id="atmos-live-cal-status">Awaiting matching ZPH02 and reference measurements</div>
+    </article>
+    <article class="atmos-cal-card">
+      <div class="atmos-cal-label">Historical dataset-calibrated AQI estimate — Hamirpur</div>
+      <div class="atmos-cal-big" id="atmos-historical-cal-aqi">Loading…</div>
+      <div class="atmos-cal-note" id="atmos-historical-cal-caption">Different optical sensor; historical test data, NOT live ATMOS</div>
+    </article>
+    <article class="atmos-cal-card">
+      <div class="atmos-cal-label">Historical reference forecast AQI estimate — Hamirpur</div>
+      <div class="atmos-cal-big" id="atmos-reference-historical-aqi">Loading…</div>
+      <div class="atmos-cal-note" id="atmos-reference-forecast-caption">Historical held-out test example, NOT current air quality</div>
+    </article>
+  </div>
+  <p class="atmos-cal-note">AQI numbers are approximate PM2.5-only indices calculated using the existing ATMOS conversion; not official CPCB overall AQI. Official PM2.5 AQI uses 24-hour averages.</p>
+</section>
+<script>
+(function () {
+  const set = (id, v) => { const node = document.getElementById(id); if (node) node.textContent = v; };
+  const show = v => (v === null || v === undefined || !Number.isFinite(Number(v))) ? 'N/A' : Math.round(Number(v)).toString();
+  async function refreshLive() {
+    try {
+      const response = await fetch('/data', {cache: 'no-store'});
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      const d = await response.json();
+      set('atmos-live-cal-aqi', show(d.calibrated_aqi));
+      const statuses = {
+        waiting_for_zph02_pm25: 'Waiting for valid live ZPH02 PM2.5',
+        stale_zph02_pm25: 'Live sensor data is stale',
+        awaiting_paired_zph02_reference_calibration: 'Waiting for co-located ZPH02 + reference measurements',
+        calibrated_with_zph02_model: 'Computed using validated device-specific ZPH02 model',
+        zph02_model_not_verified: 'Device calibration model not verified',
+        calibration_model_error: 'Calibration model could not run',
+      };
+      set('atmos-live-cal-status', statuses[d.calibration_status] || d.calibration_status || 'Calibration status unavailable');
+    } catch (error) {
+      set('atmos-live-cal-aqi', 'N/A');
+      set('atmos-live-cal-status', 'Live API unavailable: ' + error.message);
+    }
+  }
+  async function setHistorical(endpoint, valueId, captionId, valueKey, label) {
+    try {
+      const response = await fetch(endpoint);
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      const d = await response.json();
+      const row = d.latest_example;
+      if (!row) throw new Error('No test records');
+      set(valueId, show(row[valueKey]));
+      set(captionId, label + ' | sample: ' + row.time + ' | NOT a live reading');
+    } catch (error) {
+      set(valueId, 'N/A');
+      set(captionId, 'Historical results unavailable: ' + error.message);
+    }
+  }
+  refreshLive();
+  setHistorical('/historical-dataset-calibration?site=Hamirpur', 'atmos-historical-cal-aqi', 'atmos-historical-cal-caption', 'dataset_calibrated_aqi_estimate', 'Hamirpur dataset calibration');
+  setHistorical('/historical-reference-forecast?site=Hamirpur', 'atmos-reference-historical-aqi', 'atmos-reference-forecast-caption', 'forecast_aqi_estimate', 'Hamirpur model forecast');
+  setInterval(refreshLive, 15000);
+})();
+</script>
 </body>
 
 </html>
