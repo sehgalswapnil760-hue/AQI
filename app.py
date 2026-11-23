@@ -180,7 +180,16 @@ def data():
     forecast = [max(aqi - 2, 0), max(aqi - 1, 0), aqi + 1, aqi] if aqi is not None else []
     latest = latest_reading()
     calibrated_pm25, calibrated_aqi, calibration_status = live_calibrated_estimate(pm25)
+    dataset_pm25 = None
+    dataset_extrapolated = None
+    if calibration_status not in ('waiting_for_zph02_pm25', 'stale_zph02_pm25') and pm25 is not None:
+        # Hamirpur optical-to-BAM linear fit from train_models.py, first 3,093
+        # chronological pairs. Transfer to the live ZPH02 is experimental.
+        dataset_pm25 = round(0.4826716982549565 * pm25 + 6.554140236696278, 2)
+        dataset_extrapolated = not 5.65 <= pm25 <= 210.95
     return jsonify(
+        dataset_estimated_pm25=dataset_pm25, dataset_estimated_aqi=calculate_aqi(dataset_pm25),
+        dataset_extrapolated=dataset_extrapolated,
         pm25=pm25, mq135=mq135, zph02_lpr_pct=lpr,
         calibrated_pm25=calibrated_pm25, calibrated_aqi=calibrated_aqi,
         calibration_status=calibration_status,
