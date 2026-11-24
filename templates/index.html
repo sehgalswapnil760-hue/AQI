@@ -28,6 +28,7 @@ rel="stylesheet">
 .aqi-reading { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
 .aqi-reading .hero-label { min-height: 2.8em; }
 .aqi-reading .hero-aqi { font-size: clamp(3rem, 6vw, 6rem); }
+.cal-aqi-flag { display: inline-block; margin-top: 10px; padding: 5px 10px; border: 1px solid currentColor; border-radius: 12px; font-size: .85rem; }
 #atmos-live-cal-status { margin-top: 18px; color: var(--muted); line-height: 1.45; }
 </style>
 </head>
@@ -104,6 +105,7 @@ Loading
 <article class="aqi-reading" aria-labelledby="calibrated-aqi-heading">
   <h2 class="hero-label" id="calibrated-aqi-heading">Dataset-adjusted AQI (experimental)</h2>
   <strong class="hero-aqi" id="atmos-live-cal-aqi">N/A</strong>
+  <span class="cal-aqi-flag">Calibrated AQI <b id="cal-aqi-flag-value">N/A</b></span>
   <small id="atmos-live-cal-status">Checking live ZPH02 calibration…</small>
 </article>
 </div>
@@ -507,6 +509,10 @@ JNGEC Sundernagar · Himachal Pradesh
       const response = await fetch('/data', {cache: 'no-store'});
       if (!response.ok) throw new Error('HTTP ' + response.status);
       const d = await response.json();
+      const flagValue = d.calibrated_aqi == null && d.dataset_estimated_aqi != null
+        ? show(d.dataset_estimated_aqi) + ' (experimental)'
+        : show(d.calibrated_aqi);
+      set('cal-aqi-flag-value', flagValue);
       if (d.calibrated_aqi == null && d.dataset_estimated_aqi != null) {
         set('calibrated-aqi-heading', 'Dataset-adjusted AQI (experimental)');
         set('atmos-live-cal-aqi', show(d.dataset_estimated_aqi));
@@ -526,6 +532,7 @@ JNGEC Sundernagar · Himachal Pradesh
       };
       set('atmos-live-cal-status', statuses[d.calibration_status] || d.calibration_status || 'Calibration status unavailable');
     } catch (error) {
+      set('cal-aqi-flag-value', 'N/A');
       set('atmos-live-cal-aqi', 'N/A');
       set('atmos-live-cal-status', 'Live API unavailable: ' + error.message);
     }
