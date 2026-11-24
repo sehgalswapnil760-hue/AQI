@@ -30,6 +30,24 @@ rel="stylesheet">
 .aqi-reading .hero-aqi { font-size: clamp(3rem, 6vw, 6rem); }
 .cal-aqi-flag { display: inline-block; margin-top: 10px; padding: 5px 10px; border: 1px solid currentColor; border-radius: 12px; font-size: .85rem; }
 #atmos-live-cal-status { margin-top: 18px; color: var(--muted); line-height: 1.45; }
+
+main { max-width: 1440px; margin-inline: auto; }
+.section-title { padding: 28px clamp(18px,4vw,48px) 14px; font: 700 clamp(24px,3vw,36px) 'Fraunces',serif; }
+.section-links { display:flex; gap:1.2rem; flex-wrap:wrap; }
+.section-links a { color:#275747; text-underline-offset:4px; }
+.nav-left,.nav-right { display:flex; align-items:center; gap:.65rem; }
+.metric-label { display:block; }
+.metric-unit { margin-left:.25rem; }
+.hero-left,.chart-block { min-width:0; }
+@media(max-width:700px) {
+ .nav { flex-wrap:wrap; gap:12px; padding:14px 18px; }
+ .section-links { order:3; width:100%; }
+ .hero-left,.chart-block,.scale-section { padding:20px 18px; }
+ #map { height:220px; min-height:220px; }
+ .metric-card { padding:18px; }
+ .nav-time { font-size:11px; }
+ .scale-labels { font-size:9px; }
+}
 </style>
 </head>
 <body>
@@ -51,6 +69,7 @@ atmos
 </div>
 
 
+<div class="section-links"><a href="#station">Station</a><a href="#trends">Trends</a><a href="#results">Model results</a></div>
 <div class="nav-right">
 
 <span
@@ -69,7 +88,7 @@ Live
 
 
 
-<!-- HERO -->
+<main><section id="station"><h1 class="section-title">Sundernagar station</h1>
 
 <section class="hero">
 
@@ -83,13 +102,13 @@ AIR QUALITY INDEX
 </p>
 
 
-<h1
+<strong
 class="hero-aqi"
 id="aqi-value">
 
 —
 
-</h1>
+</strong>
 
 
 <span
@@ -111,7 +130,7 @@ Loading
 </div>
 <p class="hero-desc">
 
-Real-time air quality monitoring at JNGEC Sundernagar
+JNGEC Sundernagar · Last sensor update <span id="last-update">Waiting for ESP32</span>
 
 </p>
 
@@ -129,9 +148,86 @@ Real-time air quality monitoring at JNGEC Sundernagar
 
 
 
-<!-- METRICS -->
+<section class="scale-section">
 
-<section class="metrics">
+<div class="scale-wrap">
+
+<div class="scale-bar">
+
+<div
+class="scale-indicator"
+id="scale-indicator">
+
+</div>
+
+</div>
+
+
+
+<div class="scale-labels">
+
+<span>
+
+GOOD
+
+<br>
+
+<small>
+0–50
+</small>
+
+</span>
+
+
+
+<span>
+
+MODERATE
+
+<br>
+
+<small>
+51–100
+</small>
+
+</span>
+
+
+
+<span>
+
+UNHEALTHY
+
+<br>
+
+<small>
+101–150
+</small>
+
+</span>
+
+
+
+<span>
+
+HAZARDOUS
+
+<br>
+
+<small>
+150+
+</small>
+
+</span>
+
+</div>
+
+</div>
+
+</section>
+<h2 class="section-title">Sensors and weather</h2>
+
+<section class="metrics" aria-label="Sensor and weather readings">
 
 
 
@@ -180,7 +276,7 @@ id="gas">
 
 <span class="metric-unit">
 
-ppm
+ADC counts
 
 </span>
 
@@ -273,88 +369,12 @@ km/h
 
 <!-- AQI SCALE -->
 
-<section class="scale-section">
-
-<div class="scale-wrap">
-
-<div class="scale-bar">
-
-<div
-class="scale-indicator"
-id="scale-indicator">
-
-</div>
-
-</div>
-
-
-
-<div class="scale-labels">
-
-<span>
-
-GOOD
-
-<br>
-
-<small>
-0–50
-</small>
-
-</span>
-
-
-
-<span>
-
-MODERATE
-
-<br>
-
-<small>
-51–100
-</small>
-
-</span>
-
-
-
-<span>
-
-UNHEALTHY
-
-<br>
-
-<small>
-101–150
-</small>
-
-</span>
-
-
-
-<span>
-
-HAZARDOUS
-
-<br>
-
-<small>
-150+
-</small>
-
-</span>
-
-</div>
-
-</div>
-
-</section>
 
 
 
 
-<!-- CHARTS -->
+
+</section><section id="trends"><h2 class="section-title">Reading trends</h2>
 
 <section class="charts">
 
@@ -365,7 +385,7 @@ HAZARDOUS
 
 <span>
 
-Pollution Telemetry
+Sensor history
 
 </span>
 
@@ -393,7 +413,7 @@ PM2.5 & MQ135 over time
 
 <span>
 
-AQI Forecast
+Illustrative AQI projection
 
 </span>
 
@@ -421,8 +441,8 @@ Illustrative projection from the latest PM2.5 estimate
 
 
 
-<!-- HISTORICAL MODEL COMPARISON -->
-<section class="model-eval-section">
+</section>
+<section class="model-eval-section" id="results">
   <div class="model-eval-heading">
     <div>
       <p class="hero-label">MACHINE LEARNING EVALUATION</p>
@@ -471,7 +491,7 @@ Illustrative projection from the latest PM2.5 estimate
 </section>
 
 
-<!-- FOOTER -->
+</main>
 
 <footer class="footer">
 
