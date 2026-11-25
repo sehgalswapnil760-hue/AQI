@@ -328,9 +328,8 @@ function updateCards(data) {
   const rawText = rawAqi === null ? "N/A" : rawAqi.toFixed(1);
   setText("aqi-method-note",
     combined === null
-      ? "Current PM2.5 and MQ135 readings required. No values are simulated."
-      : "Raw ZPH02 AQI " + rawText + " · MQ135 ADC " + gasAdc +
-        " · Upper bound: adjusted AQI. Indicative index, not official AQI.");
+      ? "Waiting for current PM2.5 and MQ135 readings."
+      : "ZPH02 AQI " + rawText + " · MQ135 ADC " + gasAdc);
 
   const adjustedLabel = validated ? "Calibrated AQI" : "Dataset-adjusted AQI";
   setText("calibrated-aqi-heading", adjustedLabel);
