@@ -301,48 +301,66 @@ function updateForecastChart(data) {
 // =============================================
 
 function updateCards(data) {
-  // The measured ZPH02 AQI is never modified. For the headline, prefer a
-  // genuinely device-validated calibration when available. Otherwise show
-  // the historical dataset estimate ONLY as an explicitly experimental value.
-  const rawAqi = validNumber(data.predicted_aqi)
-    ? Number(data.predicted_aqi) : null;
-  const validated = validNumber(data.calibrated_aqi);
-  const experimental = !validated && validNumber(data.dataset_estimated_aqi);
-  const headlineAqi = validated
-    ? Number(data.calibrated_aqi)
-    : experimental ? Number(data.dataset_estimated_aqi) : rawAqi;
+  // Use ONLY fresh, real ZPH02 readings. The unvalidated dataset estimate
+  // remains clearly labeled and is never substituted for a sensor reading.
+  const fresh = data.pm25_fresh === true;
+  const rawAqi = validNumber(data.raw_aqi_precise)
+    ? Number(data.raw_aqi_precise)
+    : (validNumber(data.predicted_aqi) ? Number(data.predicted_aqi) : null);
+  const deviceAqi = validNumber(data.calibrated_aqi)
+    ? Number(data.calibrated_aqi) : null;
+  const datasetAqi = validNumber(data.dataset_estimated_aqi_precise)
+    ? Number(data.dataset_estimated_aqi_precise)
+    : (validNumber(data.dataset_estimated_aqi)
+      ? Number(data.dataset_estimated_aqi) : null);
 
-  setText("aqi-value", headlineAqi === null ? "N/A" : Math.round(headlineAqi));
+  const validated = fresh && deviceAqi !== null;
+  const datasetEstimate = fresh && !validated && datasetAqi !== null;
+  const headlineAqi = !fresh ? null
+    : validated ? deviceAqi
+    : datasetEstimate ? datasetAqi : rawAqi;
+
+  setText("aqi-value", displayNumber(headlineAqi, 1));
   setText("aqi-heading",
-    validated ? "ZPH02 calibrated AQI" :
-    experimental ? "Estimated AQI (dataset-adjusted)" :
-    "ZPH02 PM2.5 AQI (uncalibrated)");
+    validated ? "ZPH02 calibrated AQI"
+    : datasetEstimate ? "Estimated AQI (dataset-adjusted)"
+    : "ZPH02 PM2.5 AQI (uncalibrated)");
   setText("aqi-status",
-    getStatus(headlineAqi));
+    fresh ? getStatus(headlineAqi)
+      : data.pm25_age_seconds === null ? "Waiting for ESP32"
+      : "Sensor data stale");
+
   const rawNote = rawAqi === null ? "Raw ZPH02 AQI unavailable"
-    : "Raw ZPH02 AQI: " + Math.round(rawAqi);
+    : "Raw ZPH02 AQI: " + rawAqi.toFixed(1);
   setText("aqi-method-note",
-    experimental
-      ? rawNote + " · Historical model not validated for ZPH02" +
-        (data.dataset_extrapolated ? " · Outside training range" : "")
-      : validated ? rawNote + " · Device-validated calibration" : rawNote);
+    !fresh ? "No recent ZPH02 reading. Last measurements are not shown as live."
+    : datasetEstimate
+      ? rawNote + " · Dataset model not validated for this ZPH02" +
+        (data.dataset_extrapolated ? " · Outside model training range" : "")
+      : validated ? rawNote + " · Device-validated correction" : rawNote);
 
-  setText("pm25", displayNumber(data.pm25));
+  const adjusted = validated ? deviceAqi : datasetEstimate ? datasetAqi : null;
+  const adjustedLabel = validated ? "Calibrated AQI" : "Dataset-adjusted AQI";
+  setText("calibrated-aqi-heading", adjustedLabel);
+  setText("cal-aqi-flag-label", adjustedLabel);
+  setText("atmos-live-cal-aqi", displayNumber(adjusted, 1));
+  setText("cal-aqi-flag-value", displayNumber(adjusted, 1));
+  setText("calibrated-aqi", displayNumber(adjusted, 1));
+
+  setText("nav-live",
+    fresh ? "Live" : data.pm25_age_seconds === null ? "Waiting" : "Sensor offline");
+
+  // Preserve the actual sensor values. Do not fabricate new fluctuations.
+  setText("pm25", displayNumber(fresh ? data.pm25 : null, 2));
   setText("gas", displayNumber(data.mq135, 0));
-
   setText("temp", displayNumber(data.temp));
   setText("humidity", displayNumber(data.humidity, 0));
   setText("wind", displayNumber(data.wind));
 
   const scale = element("scale-indicator");
-
   if (scale) {
     if (headlineAqi !== null) {
-      const position = Math.max(
-        0,
-        Math.min(headlineAqi, 300)
-      ) / 3;
-
+      const position = Math.max(0, Math.min(headlineAqi, 300)) / 3;
       scale.style.left = position + "%";
       scale.style.display = "";
     } else {
@@ -354,20 +372,9 @@ function updateCards(data) {
     validNumber(data.temp) && validNumber(data.humidity)
       ? `${displayNumber(data.temp)}°C · ${displayNumber(data.humidity, 0)}% RH`
       : "Weather unavailable";
-
   setText("footer-weather", footerWeather);
-
-  setText(
-    "last-update",
-    data.last_update
-      ? formatTime(data.last_update)
-      : "Waiting for ESP32"
-  );
-
-  setText(
-    "calibrated-aqi",
-    displayNumber(data.calibrated_aqi, 0)
-  );
+  setText("last-update",
+    data.last_update ? formatTime(data.last_update) : "Waiting for ESP32");
 }
 
 // =============================================
