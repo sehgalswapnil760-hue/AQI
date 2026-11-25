@@ -127,12 +127,6 @@ Loading
   <span class="cal-aqi-flag"><span id="cal-aqi-flag-label">Dataset-adjusted AQI</span> <b id="cal-aqi-flag-value">N/A</b></span>
   
 </article>
-<article class="aqi-reading" aria-labelledby="regional-aqi-heading">
-  <h2 class="hero-label" id="regional-aqi-heading">Regional PM2.5 AQI (modeled)</h2>
-  <strong class="hero-aqi" id="regional-pm25-aqi">N/A</strong>
-  <span class="cal-aqi-flag">Regional PM2.5 <b id="regional-pm25">N/A</b> µg/m³</span>
-  <small id="regional-air-status">Independent OpenWeather model, not a station measurement or sensor calibration.</small>
-</article>
 </div>
 <p class="hero-desc">
 
@@ -535,18 +529,6 @@ JNGEC Sundernagar · Himachal Pradesh
       const response = await fetch('/data', {cache: 'no-store'});
       if (!response.ok) throw new Error('HTTP ' + response.status);
       const d = await response.json();
-      const regionValid = d.regional_air_status === 'ok'
-        && d.regional_pm25_aqi !== null && d.regional_pm25 !== null;
-      set('regional-pm25-aqi', regionValid ? show(d.regional_pm25_aqi) : 'N/A');
-      set('regional-pm25', regionValid ? Number(d.regional_pm25).toFixed(1) : 'N/A');
-      const regionWhen = d.regional_air_observed_at
-        ? new Date(d.regional_air_observed_at).toLocaleString('en-IN',
-            {timeZone:'Asia/Kolkata', hour:'numeric', minute:'2-digit', day:'numeric', month:'short'})
-        : '';
-      set('regional-air-status', regionValid
-        ? 'OpenWeather modeled regional PM2.5 · ' + regionWhen +
-          ' · Not official AQI or ZPH02 calibration'
-        : 'Regional model unavailable or stale · No value substituted for sensor AQI');
       const flagValue = d.calibrated_aqi == null && d.dataset_estimated_aqi != null
         ? show(d.dataset_estimated_aqi) + ' (experimental)'
         : show(d.calibrated_aqi);
@@ -571,9 +553,6 @@ JNGEC Sundernagar · Himachal Pradesh
       };
       set('atmos-live-cal-status', statuses[d.calibration_status] || d.calibration_status || 'Calibration status unavailable');
     } catch (error) {
-      set('regional-pm25-aqi', 'N/A');
-      set('regional-pm25', 'N/A');
-      set('regional-air-status', 'Regional model temporarily unavailable');
       set('cal-aqi-flag-value', 'N/A');
       set('atmos-live-cal-aqi', 'N/A');
       set('atmos-live-cal-status', 'Live API unavailable: ' + error.message);
