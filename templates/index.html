@@ -125,7 +125,7 @@ Loading
 
 </div>
 <article class="aqi-reading" aria-labelledby="calibrated-aqi-heading">
-  <h2 class="hero-label" id="calibrated-aqi-heading">Dataset-adjusted AQI (experimental)</h2>
+  <h2 class="hero-label" id="calibrated-aqi-heading">Dataset-adjusted AQI</h2>
   <strong class="hero-aqi" id="atmos-live-cal-aqi">N/A</strong>
   <span class="cal-aqi-flag"><span id="cal-aqi-flag-label">Dataset-adjusted AQI</span> <b id="cal-aqi-flag-value">N/A</b></span>
   
@@ -533,18 +533,18 @@ JNGEC Sundernagar · Himachal Pradesh
       if (!response.ok) throw new Error('HTTP ' + response.status);
       const d = await response.json();
       const flagValue = d.calibrated_aqi == null && d.dataset_estimated_aqi != null
-        ? show(d.dataset_estimated_aqi) + ' (experimental)'
+        ? show(d.dataset_estimated_aqi)
         : show(d.calibrated_aqi);
       set('cal-aqi-flag-value', flagValue);
       set('cal-aqi-flag-label', d.calibrated_aqi == null ? 'Dataset-adjusted AQI' : 'Validated calibrated AQI');
       if (d.calibrated_aqi == null && d.dataset_estimated_aqi != null) {
-        set('calibrated-aqi-heading', 'Dataset-adjusted AQI (experimental)');
+        set('calibrated-aqi-heading', 'Dataset-adjusted AQI');
         set('atmos-live-cal-aqi', show(d.dataset_estimated_aqi));
         const rangeNote = d.dataset_extrapolated ? ' · Outside training range' : '';
         set('atmos-live-cal-status', 'Live ZPH02 input · Dataset-adjusted PM2.5: ' + d.dataset_estimated_pm25 + ' µg/m³ · Unvalidated for this sensor' + rangeNote);
         return;
       }
-      set('calibrated-aqi-heading', d.calibrated_aqi == null ? 'Dataset-adjusted AQI (experimental)' : 'Calibrated AQI');
+      set('calibrated-aqi-heading', d.calibrated_aqi == null ? 'Dataset-adjusted AQI' : 'Calibrated AQI');
       set('atmos-live-cal-aqi', show(d.calibrated_aqi));
       const statuses = {
         waiting_for_zph02_pm25: 'Waiting for valid live ZPH02 PM2.5',
