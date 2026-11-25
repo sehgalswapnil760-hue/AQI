@@ -97,7 +97,7 @@ Checking
 
 <p class="hero-label" id="aqi-heading">
 
-ZPH02 PM2.5 AQI (uncalibrated)
+Sensor AQI estimate (PM2.5 + MQ135)
 
 </p>
 
@@ -119,7 +119,7 @@ Loading
 
 </span>
 <small id="aqi-method-note" style="display:block;margin-top:10px;color:var(--muted);line-height:1.45;">
-  The raw ZPH02 reading is preserved separately.
+  Uses real ZPH02 and MQ135 measurements; indicative, not an official AQI.
 </small>
 
 
@@ -521,7 +521,7 @@ JNGEC Sundernagar · Himachal Pradesh
 
 
 <script src=
-"{{ url_for('static', filename='script.js') }}?v=20261125-live-refresh">
+"{{ url_for('static', filename='script.js') }}?v=20261125-pm-mq-sensor-blend">
 </script>
 
 </body>
