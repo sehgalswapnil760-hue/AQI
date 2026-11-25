@@ -315,11 +315,10 @@ function updateCards(data) {
   setText("aqi-value", headlineAqi === null ? "N/A" : Math.round(headlineAqi));
   setText("aqi-heading",
     validated ? "ZPH02 calibrated AQI" :
-    experimental ? "Estimated AQI (experimental)" :
+    experimental ? "Estimated AQI (dataset-adjusted)" :
     "ZPH02 PM2.5 AQI (uncalibrated)");
   setText("aqi-status",
-    getStatus(headlineAqi) +
-    (experimental ? " · Experimental" : ""));
+    getStatus(headlineAqi));
   const rawNote = rawAqi === null ? "Raw ZPH02 AQI unavailable"
     : "Raw ZPH02 AQI: " + Math.round(rawAqi);
   setText("aqi-method-note",
