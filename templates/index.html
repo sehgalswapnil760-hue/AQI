@@ -78,8 +78,8 @@ id="nav-time">
 
 </span>
 
-<span class="nav-live">
-Live
+<span class="nav-live" id="nav-live">
+Checking
 </span>
 
 </div>
@@ -521,50 +521,9 @@ JNGEC Sundernagar · Himachal Pradesh
 
 
 <script src=
-"{{ url_for('static', filename='script.js') }}?v=20261125-primary-estimate">
+"{{ url_for('static', filename='script.js') }}?v=20261125-live-refresh">
 </script>
-<script>
-(function () {
-  const set = (id, v) => { const node = document.getElementById(id); if (node) node.textContent = v; };
-  const show = v => (v === null || v === undefined || !Number.isFinite(Number(v))) ? 'N/A' : Math.round(Number(v)).toString();
-  async function refreshLive() {
-    try {
-      const response = await fetch('/data', {cache: 'no-store'});
-      if (!response.ok) throw new Error('HTTP ' + response.status);
-      const d = await response.json();
-      const flagValue = d.calibrated_aqi == null && d.dataset_estimated_aqi != null
-        ? show(d.dataset_estimated_aqi)
-        : show(d.calibrated_aqi);
-      set('cal-aqi-flag-value', flagValue);
-      set('cal-aqi-flag-label', d.calibrated_aqi == null ? 'Dataset-adjusted AQI' : 'Validated calibrated AQI');
-      if (d.calibrated_aqi == null && d.dataset_estimated_aqi != null) {
-        set('calibrated-aqi-heading', 'Dataset-adjusted AQI');
-        set('atmos-live-cal-aqi', show(d.dataset_estimated_aqi));
-        const rangeNote = d.dataset_extrapolated ? ' · Outside training range' : '';
-        set('atmos-live-cal-status', 'Live ZPH02 input · Dataset-adjusted PM2.5: ' + d.dataset_estimated_pm25 + ' µg/m³ · Unvalidated for this sensor' + rangeNote);
-        return;
-      }
-      set('calibrated-aqi-heading', d.calibrated_aqi == null ? 'Dataset-adjusted AQI' : 'Calibrated AQI');
-      set('atmos-live-cal-aqi', show(d.calibrated_aqi));
-      const statuses = {
-        waiting_for_zph02_pm25: 'Waiting for valid live ZPH02 PM2.5',
-        stale_zph02_pm25: 'Live sensor data is stale',
-        awaiting_paired_zph02_reference_calibration: 'Waiting for co-located ZPH02 + reference measurements',
-        calibrated_with_zph02_model: 'Computed using validated device-specific ZPH02 model',
-        zph02_model_not_verified: 'Device calibration model not verified',
-        calibration_model_error: 'Calibration model could not run',
-      };
-      set('atmos-live-cal-status', statuses[d.calibration_status] || d.calibration_status || 'Calibration status unavailable');
-    } catch (error) {
-      set('cal-aqi-flag-value', 'N/A');
-      set('atmos-live-cal-aqi', 'N/A');
-      set('atmos-live-cal-status', 'Live API unavailable: ' + error.message);
-    }
-  }
-  refreshLive();
-  setInterval(refreshLive, 15000);
-})();
-</script>
+
 </body>
 
 </html>
