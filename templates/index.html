@@ -97,7 +97,7 @@ Live
 
 <p class="hero-label">
 
-AIR QUALITY INDEX
+ZPH02 PM2.5 AQI (uncalibrated)
 
 </p>
 
@@ -124,7 +124,7 @@ Loading
 <article class="aqi-reading" aria-labelledby="calibrated-aqi-heading">
   <h2 class="hero-label" id="calibrated-aqi-heading">Dataset-adjusted AQI (experimental)</h2>
   <strong class="hero-aqi" id="atmos-live-cal-aqi">N/A</strong>
-  <span class="cal-aqi-flag">Calibrated AQI <b id="cal-aqi-flag-value">N/A</b></span>
+  <span class="cal-aqi-flag"><span id="cal-aqi-flag-label">Dataset-adjusted AQI</span> <b id="cal-aqi-flag-value">N/A</b></span>
   <small id="atmos-live-cal-status">Checking live ZPH02 calibration…</small>
 </article>
 <article class="aqi-reading" aria-labelledby="regional-aqi-heading">
@@ -551,6 +551,7 @@ JNGEC Sundernagar · Himachal Pradesh
         ? show(d.dataset_estimated_aqi) + ' (experimental)'
         : show(d.calibrated_aqi);
       set('cal-aqi-flag-value', flagValue);
+      set('cal-aqi-flag-label', d.calibrated_aqi == null ? 'Dataset-adjusted AQI' : 'Validated calibrated AQI');
       if (d.calibrated_aqi == null && d.dataset_estimated_aqi != null) {
         set('calibrated-aqi-heading', 'Dataset-adjusted AQI (experimental)');
         set('atmos-live-cal-aqi', show(d.dataset_estimated_aqi));
