@@ -301,17 +301,32 @@ function updateForecastChart(data) {
 // =============================================
 
 function updateCards(data) {
-  setText(
-    "aqi-value",
-    validNumber(data.predicted_aqi)
-      ? Math.round(Number(data.predicted_aqi))
-      : "N/A"
-  );
+  // The measured ZPH02 AQI is never modified. For the headline, prefer a
+  // genuinely device-validated calibration when available. Otherwise show
+  // the historical dataset estimate ONLY as an explicitly experimental value.
+  const rawAqi = validNumber(data.predicted_aqi)
+    ? Number(data.predicted_aqi) : null;
+  const validated = validNumber(data.calibrated_aqi);
+  const experimental = !validated && validNumber(data.dataset_estimated_aqi);
+  const headlineAqi = validated
+    ? Number(data.calibrated_aqi)
+    : experimental ? Number(data.dataset_estimated_aqi) : rawAqi;
 
-  setText(
-    "aqi-status",
-    getStatus(data.predicted_aqi)
-  );
+  setText("aqi-value", headlineAqi === null ? "N/A" : Math.round(headlineAqi));
+  setText("aqi-heading",
+    validated ? "ZPH02 calibrated AQI" :
+    experimental ? "Estimated AQI (experimental)" :
+    "ZPH02 PM2.5 AQI (uncalibrated)");
+  setText("aqi-status",
+    getStatus(headlineAqi) +
+    (experimental ? " · Experimental" : ""));
+  const rawNote = rawAqi === null ? "Raw ZPH02 AQI unavailable"
+    : "Raw ZPH02 AQI: " + Math.round(rawAqi);
+  setText("aqi-method-note",
+    experimental
+      ? rawNote + " · Historical model not validated for ZPH02" +
+        (data.dataset_extrapolated ? " · Outside training range" : "")
+      : validated ? rawNote + " · Device-validated calibration" : rawNote);
 
   setText("pm25", displayNumber(data.pm25));
   setText("gas", displayNumber(data.mq135, 0));
@@ -323,10 +338,10 @@ function updateCards(data) {
   const scale = element("scale-indicator");
 
   if (scale) {
-    if (validNumber(data.predicted_aqi)) {
+    if (headlineAqi !== null) {
       const position = Math.max(
         0,
-        Math.min(Number(data.predicted_aqi), 300)
+        Math.min(headlineAqi, 300)
       ) / 3;
 
       scale.style.left = position + "%";
