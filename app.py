@@ -112,6 +112,32 @@ def get_smoothed():
     return avg('pm25'), avg('mq135'), avg('zph02_lpr_pct')
 
 
+def get_recent_paired_sensor_values():
+    """Three recent, paired ZPH02/MQ135 uploads from the same ESP32 readings.
+
+    Independent recent_values() queries can mix readings from different times;
+    this keeps both inputs synchronized for the combined indicator.
+    """
+    with db_connect() as con:
+        rows = con.execute(
+            """SELECT timestamp, pm25, mq135 FROM readings
+               WHERE pm25 IS NOT NULL AND mq135 IS NOT NULL
+               ORDER BY id DESC LIMIT 3"""
+        ).fetchall()
+    if not rows:
+        return None, None, None
+    try:
+        newest = datetime.fromisoformat(rows[0]['timestamp'])
+        if newest.tzinfo is None:
+            newest = newest.replace(tzinfo=timezone.utc)
+        age = (datetime.now(timezone.utc) - newest.astimezone(timezone.utc)).total_seconds()
+    except (ValueError, TypeError, OverflowError):
+        return None, None, None
+    pm25 = round(sum(float(row['pm25']) for row in rows) / len(rows), 2)
+    mq135 = round(sum(float(row['mq135']) for row in rows) / len(rows), 1)
+    return pm25, mq135, age
+
+
 def calculate_aqi_float(pm):
     """Historical project PM2.5-only AQI mapping, before display rounding.
 
@@ -137,6 +163,35 @@ def calculate_aqi_float(pm):
 def calculate_aqi(pm):
     value = calculate_aqi_float(pm)
     return round(value) if value is not None else None
+
+
+def calculate_combined_sensor_indicator(pm25, mq135, adjusted_aqi):
+    """Indicative sensor blend, NOT a validated pollutant AQI.
+
+    Raw MQ135 ADC counts (0..4095) cannot be converted to gas concentration
+    without sensor-specific characterization. They influence the fraction of
+    the difference between raw PM2.5 AQI and the historical dataset estimate.
+    The upper limit is deliberate for this dashboard, not scientific
+    calibration. Show the bound clearly in the user interface.
+    """
+    if any(v is None for v in (pm25, mq135, adjusted_aqi)):
+        return None, False
+    if not all(np.isfinite(v) for v in (pm25, mq135, adjusted_aqi)):
+        return None, False
+    if not 0 <= mq135 <= 4095 or pm25 < 0 or adjusted_aqi < 0:
+        return None, False
+    raw_aqi = calculate_aqi_float(pm25)
+    if raw_aqi is None:
+        return None, False
+    gas_fraction = mq135 / 4095.0
+    # Bounded, monotonic MQ135 contribution: no arbitrary fluctuations.
+    mixing_fraction = 0.20 + 0.65 * gas_fraction
+    suggestion = raw_aqi + max(0.0, adjusted_aqi - raw_aqi) * mixing_fraction
+    # Reserve one display step below adjusted when it is above zero.
+    max_display = max(0.0, round(float(adjusted_aqi) - 0.1, 1))
+    result = round(min(suggestion, max_display), 1)
+    limited = suggestion > max_display
+    return result, limited
 
 
 @app.route('/')
@@ -187,6 +242,7 @@ def update():
 def data():
     pm25, mq135, lpr = get_smoothed()
     aqi = calculate_aqi(pm25)
+    paired_pm25, paired_mq135, paired_age = get_recent_paired_sensor_values()
     age = latest_valid_pm25_age_seconds()
     pm25_fresh = age is not None and -60 <= age <= SENSOR_STALE_SECONDS
     w = weather()
@@ -206,7 +262,23 @@ def data():
         dataset_pm25 = round(modeled_pm25, 2)
         dataset_aqi_precise = round(calculate_aqi_float(modeled_pm25), 1)
         dataset_extrapolated = not 5.65 <= pm25 <= 210.95
+    pair_fresh = (
+        pm25_fresh and paired_age is not None
+        and -60 <= paired_age <= SENSOR_STALE_SECONDS
+    )
+    combined_aqi, combined_capped = (
+        calculate_combined_sensor_indicator(paired_pm25, paired_mq135, dataset_aqi_precise)
+        if pair_fresh else (None, False)
+    )
     return jsonify(
+        sensor_combined_aqi=combined_aqi,
+        sensor_combined_capped=combined_capped,
+        sensor_combined_status='live' if combined_aqi is not None else (
+            'waiting_for_paired_pm25_mq135' if pm25_fresh else 'sensor_data_stale'
+        ),
+        sensor_combined_basis='Indicative PM2.5 + MQ135 ADC blend; capped below dataset-adjusted estimate; not official AQI',
+        paired_pm25=paired_pm25 if pair_fresh else None,
+        paired_mq135_adc=paired_mq135 if pair_fresh else None,
         dataset_estimated_pm25=dataset_pm25,
         dataset_estimated_aqi=calculate_aqi(dataset_pm25),
         dataset_estimated_aqi_precise=dataset_aqi_precise,
