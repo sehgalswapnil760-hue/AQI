@@ -266,8 +266,13 @@ def data():
         pm25_fresh and paired_age is not None
         and -60 <= paired_age <= SENSOR_STALE_SECONDS
     )
+    # The right-hand comparison may use a separately validated device model.
+    # The combined sensor indicator must stay below that SAME displayed value.
+    displayed_adjusted_aqi = (
+        float(calibrated_aqi) if calibrated_aqi is not None else dataset_aqi_precise
+    )
     combined_aqi, combined_capped = (
-        calculate_combined_sensor_indicator(paired_pm25, paired_mq135, dataset_aqi_precise)
+        calculate_combined_sensor_indicator(paired_pm25, paired_mq135, displayed_adjusted_aqi)
         if pair_fresh else (None, False)
     )
     return jsonify(
