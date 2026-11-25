@@ -301,45 +301,37 @@ function updateForecastChart(data) {
 // =============================================
 
 function updateCards(data) {
-  // Use ONLY fresh, real ZPH02 readings. The unvalidated dataset estimate
-  // remains clearly labeled and is never substituted for a sensor reading.
+  // The main number uses fresh, paired ZPH02 PM2.5 and MQ135 ADC readings.
+  // It is an indicative sensor blend, deliberately bounded by the separate
+  // dataset-adjusted comparison, NOT an official multi-pollutant AQI.
   const fresh = data.pm25_fresh === true;
+  const combined = fresh && validNumber(data.sensor_combined_aqi)
+    ? Number(data.sensor_combined_aqi) : null;
   const rawAqi = validNumber(data.raw_aqi_precise)
-    ? Number(data.raw_aqi_precise)
-    : (validNumber(data.predicted_aqi) ? Number(data.predicted_aqi) : null);
-  const deviceAqi = validNumber(data.calibrated_aqi)
-    ? Number(data.calibrated_aqi) : null;
-  const datasetAqi = validNumber(data.dataset_estimated_aqi_precise)
-    ? Number(data.dataset_estimated_aqi_precise)
-    : (validNumber(data.dataset_estimated_aqi)
-      ? Number(data.dataset_estimated_aqi) : null);
+    ? Number(data.raw_aqi_precise) : null;
+  const validated = fresh && validNumber(data.calibrated_aqi);
+  const adjusted = !fresh ? null
+    : validated ? Number(data.calibrated_aqi)
+    : validNumber(data.dataset_estimated_aqi_precise)
+      ? Number(data.dataset_estimated_aqi_precise) : null;
 
-  const validated = fresh && deviceAqi !== null;
-  const datasetEstimate = fresh && !validated && datasetAqi !== null;
-  const headlineAqi = !fresh ? null
-    : validated ? deviceAqi
-    : datasetEstimate ? datasetAqi : rawAqi;
-
-  setText("aqi-value", displayNumber(headlineAqi, 1));
-  setText("aqi-heading",
-    validated ? "ZPH02 calibrated AQI"
-    : datasetEstimate ? "Estimated AQI (dataset-adjusted)"
-    : "ZPH02 PM2.5 AQI (uncalibrated)");
+  setText("aqi-value", displayNumber(combined, 1));
+  setText("aqi-heading", "Sensor AQI estimate (PM2.5 + MQ135)");
   setText("aqi-status",
-    fresh ? getStatus(headlineAqi)
-      : data.pm25_age_seconds === null ? "Waiting for ESP32"
-      : "Sensor data stale");
+    !fresh ? (data.pm25_age_seconds === null
+      ? "Waiting for ESP32" : "Sensor data stale")
+    : combined !== null ? getStatus(combined) + " · Indicative"
+    : "Waiting for paired sensors");
 
-  const rawNote = rawAqi === null ? "Raw ZPH02 AQI unavailable"
-    : "Raw ZPH02 AQI: " + rawAqi.toFixed(1);
+  const gasAdc = validNumber(data.paired_mq135_adc)
+    ? Number(data.paired_mq135_adc).toFixed(0) : "N/A";
+  const rawText = rawAqi === null ? "N/A" : rawAqi.toFixed(1);
   setText("aqi-method-note",
-    !fresh ? "No recent ZPH02 reading. Last measurements are not shown as live."
-    : datasetEstimate
-      ? rawNote + " · Dataset model not validated for this ZPH02" +
-        (data.dataset_extrapolated ? " · Outside model training range" : "")
-      : validated ? rawNote + " · Device-validated correction" : rawNote);
+    combined === null
+      ? "Current PM2.5 and MQ135 readings required. No values are simulated."
+      : "Raw ZPH02 AQI " + rawText + " · MQ135 ADC " + gasAdc +
+        " · Upper bound: adjusted AQI. Indicative index, not official AQI.");
 
-  const adjusted = validated ? deviceAqi : datasetEstimate ? datasetAqi : null;
   const adjustedLabel = validated ? "Calibrated AQI" : "Dataset-adjusted AQI";
   setText("calibrated-aqi-heading", adjustedLabel);
   setText("cal-aqi-flag-label", adjustedLabel);
@@ -347,10 +339,10 @@ function updateCards(data) {
   setText("cal-aqi-flag-value", displayNumber(adjusted, 1));
   setText("calibrated-aqi", displayNumber(adjusted, 1));
 
-  setText("nav-live",
-    fresh ? "Live" : data.pm25_age_seconds === null ? "Waiting" : "Sensor offline");
+  setText("nav-live", !fresh
+    ? (data.pm25_age_seconds === null ? "Waiting" : "Sensor offline")
+    : combined === null ? "Awaiting MQ135" : "Live");
 
-  // Preserve the actual sensor values. Do not fabricate new fluctuations.
   setText("pm25", displayNumber(fresh ? data.pm25 : null, 2));
   setText("gas", displayNumber(data.mq135, 0));
   setText("temp", displayNumber(data.temp));
@@ -359,9 +351,8 @@ function updateCards(data) {
 
   const scale = element("scale-indicator");
   if (scale) {
-    if (headlineAqi !== null) {
-      const position = Math.max(0, Math.min(headlineAqi, 300)) / 3;
-      scale.style.left = position + "%";
+    if (combined !== null) {
+      scale.style.left = Math.max(0, Math.min(combined, 300)) / 3 + "%";
       scale.style.display = "";
     } else {
       scale.style.display = "none";
