@@ -22,6 +22,9 @@ LAT, LON = 31.515355, 76.878331
 WEATHER_CACHE_TIME = 600
 weather_cache = {'data': None, 'timestamp': 0}
 weather_lock = threading.Lock()
+regional_air_lock = threading.Lock()
+REGIONAL_AIR_CACHE_TIME = 600
+regional_air_cache = {'data': None, 'timestamp': 0}
 data_lock = threading.Lock()
 data_store = {'pm25_buffer': deque(maxlen=5), 'mq135_buffer': deque(maxlen=5), 'lpr_buffer': deque(maxlen=5)}
 
@@ -87,6 +90,50 @@ def weather():
     except (requests.RequestException, KeyError, TypeError, ValueError):
         app.logger.exception('Weather request failed')
         return weather_cache['data'] or fallback
+
+
+def regional_air_quality():
+    """Independent modeled regional PM2.5 for context, not ZPH02 calibration.
+
+    OpenWeather's main.aqi is a 1-5 category, not the dashboard's 0-300
+    PM2.5-based index. We use the returned PM2.5 concentration instead.
+    """
+    with regional_air_lock:
+        cached = regional_air_cache['data']
+        if cached is not None and time.time() - regional_air_cache['timestamp'] < REGIONAL_AIR_CACHE_TIME:
+            return dict(cached)
+
+    fallback = {'pm25': None, 'aqi': None, 'observed_at': None, 'status': 'unavailable'}
+    if not API_KEY:
+        return dict(fallback, status='api_key_missing')
+
+    try:
+        response = requests.get(
+            'https://api.openweathermap.org/data/2.5/air_pollution',
+            params={'lat': LAT, 'lon': LON, 'appid': API_KEY},
+            timeout=6,
+        )
+        response.raise_for_status()
+        observation = response.json()['list'][0]
+        concentration = float(observation['components']['pm2_5'])
+        observed_epoch = int(observation['dt'])
+        if not np.isfinite(concentration) or concentration < 0 or observed_epoch <= 0:
+            raise ValueError('Invalid regional PM2.5 observation')
+        result = {
+            'pm25': round(concentration, 2),
+            'aqi': calculate_aqi(concentration),
+            'observed_at': datetime.fromtimestamp(observed_epoch, timezone.utc).isoformat(),
+            'status': 'ok' if -900 <= time.time() - observed_epoch <= 10800 else 'stale',
+        }
+    except (requests.RequestException, KeyError, IndexError, TypeError, ValueError, OverflowError, OSError):
+        app.logger.warning('Regional air quality request unavailable', exc_info=True)
+        with regional_air_lock:
+            previous = regional_air_cache['data']
+        result = dict(previous, status='stale') if previous and previous['pm25'] is not None else fallback
+
+    with regional_air_lock:
+        regional_air_cache.update(data=result, timestamp=time.time())
+    return dict(result)
 
 
 def optional_number(d, key, low, high):
@@ -174,6 +221,7 @@ def data():
     pm25, mq135, lpr = get_smoothed()
     aqi = calculate_aqi(pm25)
     w = weather()
+    regional_air = regional_air_quality()
     now = datetime.now(pytz.timezone('Asia/Kolkata'))
     forecast_time = [(now + timedelta(minutes=m)).strftime('%I:%M %p') for m in (5, 10, 15, 20)]
     # Historical UI placeholder, NOT an actual ML forecast.
@@ -190,6 +238,11 @@ def data():
     return jsonify(
         dataset_estimated_pm25=dataset_pm25, dataset_estimated_aqi=calculate_aqi(dataset_pm25),
         dataset_extrapolated=dataset_extrapolated,
+        regional_pm25=regional_air['pm25'],
+        regional_pm25_aqi=regional_air['aqi'],
+        regional_air_observed_at=regional_air['observed_at'],
+        regional_air_status=regional_air['status'],
+        regional_air_source='OpenWeather modeled regional PM2.5; not official or ZPH02 calibration',
         pm25=pm25, mq135=mq135, zph02_lpr_pct=lpr,
         calibrated_pm25=calibrated_pm25, calibrated_aqi=calibrated_aqi,
         calibration_status=calibration_status,
