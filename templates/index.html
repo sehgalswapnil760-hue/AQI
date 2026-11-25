@@ -95,7 +95,7 @@ Live
 <div class="hero-left">
 <div class="aqi-pair"><div class="aqi-reading">
 
-<p class="hero-label">
+<p class="hero-label" id="aqi-heading">
 
 ZPH02 PM2.5 AQI (uncalibrated)
 
@@ -118,6 +118,9 @@ id="aqi-status">
 Loading
 
 </span>
+<small id="aqi-method-note" style="display:block;margin-top:10px;color:var(--muted);line-height:1.45;">
+  The raw ZPH02 reading is preserved separately.
+</small>
 
 
 </div>
@@ -518,7 +521,7 @@ JNGEC Sundernagar · Himachal Pradesh
 
 
 <script src=
-"{{ url_for('static', filename='script.js') }}?v=20261125-ui-cleanup">
+"{{ url_for('static', filename='script.js') }}?v=20261125-primary-estimate">
 </script>
 <script>
 (function () {
