@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, make_response
 import os
 import time
 import sqlite3
@@ -178,7 +178,11 @@ def calculate_aqi(pm):
 
 @app.route('/')
 def home():
-    return render_template('index.html')
+    response = make_response(render_template('index.html'))
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 
 @app.route('/update', methods=['POST'])
