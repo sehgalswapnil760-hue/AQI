@@ -20,6 +20,7 @@ DB_PATH = os.environ.get('ATMOS_DB_PATH', os.path.join(BASE_DIR, 'atmos.db'))
 API_KEY = os.environ.get('OPENWEATHER_API_KEY', '')
 LAT, LON = 31.515355, 76.878331
 WEATHER_CACHE_TIME = 600
+SENSOR_STALE_SECONDS = 120  # ESP32 normally uploads about every 10 seconds.
 weather_cache = {'data': None, 'timestamp': 0}
 weather_lock = threading.Lock()
 data_lock = threading.Lock()
@@ -52,7 +53,7 @@ def recent_values(field):
         raise ValueError('Invalid field')
     with db_connect() as con:
         rows = con.execute(
-            f'SELECT {field} FROM readings WHERE {field} IS NOT NULL ORDER BY id DESC LIMIT 5'
+            f'SELECT {field} FROM readings WHERE {field} IS NOT NULL ORDER BY id DESC LIMIT 3'
         ).fetchall()
     return [float(row[0]) for row in rows]
 
@@ -107,26 +108,35 @@ def optional_number(d, key, low, high):
 def get_smoothed():
     def avg(field):
         vals = recent_values(field)
-        return round(sum(vals) / len(vals), 1) if vals else None
+        return round(sum(vals) / len(vals), 2 if field == 'pm25' else 1) if vals else None
     return avg('pm25'), avg('mq135'), avg('zph02_lpr_pct')
 
 
-def calculate_aqi(pm):
-    # Preserves the project's original approximate PM2.5-to-AQI conversion.
+def calculate_aqi_float(pm):
+    """Historical project PM2.5-only AQI mapping, before display rounding.
+
+    Not an official multi-pollutant Indian AQI. Fractional precision is
+    useful for displaying genuine small changes in the sensor input.
+    """
     if pm is None or not np.isfinite(pm):
         return None
     pm = max(0.0, float(pm))
     if pm <= 12:
-        return round(50 / 12 * pm)
+        return 50 / 12 * pm
     if pm <= 35.4:
-        return round((100 - 51) / (35.4 - 12.1) * (pm - 12.1) + 51)
+        return (100 - 51) / (35.4 - 12.1) * (pm - 12.1) + 51
     if pm <= 55.4:
-        return round((150 - 101) / (55.4 - 35.5) * (pm - 35.5) + 101)
+        return (150 - 101) / (55.4 - 35.5) * (pm - 35.5) + 101
     if pm <= 150:
-        return round((200 - 151) / (150 - 55.5) * (pm - 55.5) + 151)
+        return (200 - 151) / (150 - 55.5) * (pm - 55.5) + 151
     if pm <= 250:
-        return round((300 - 201) / (250 - 150.5) * (pm - 150.5) + 201)
-    return 300
+        return (300 - 201) / (250 - 150.5) * (pm - 150.5) + 201
+    return 300.0
+
+
+def calculate_aqi(pm):
+    value = calculate_aqi_float(pm)
+    return round(value) if value is not None else None
 
 
 @app.route('/')
@@ -177,6 +187,8 @@ def update():
 def data():
     pm25, mq135, lpr = get_smoothed()
     aqi = calculate_aqi(pm25)
+    age = latest_valid_pm25_age_seconds()
+    pm25_fresh = age is not None and -60 <= age <= SENSOR_STALE_SECONDS
     w = weather()
     now = datetime.now(pytz.timezone('Asia/Kolkata'))
     forecast_time = [(now + timedelta(minutes=m)).strftime('%I:%M %p') for m in (5, 10, 15, 20)]
@@ -185,15 +197,23 @@ def data():
     latest = latest_reading()
     calibrated_pm25, calibrated_aqi, calibration_status = live_calibrated_estimate(pm25)
     dataset_pm25 = None
+    dataset_aqi_precise = None
     dataset_extrapolated = None
-    if calibration_status not in ('waiting_for_zph02_pm25', 'stale_zph02_pm25') and pm25 is not None:
+    if pm25_fresh and pm25 is not None:
         # Hamirpur optical-to-BAM linear fit from train_models.py, first 3,093
         # chronological pairs. Transfer to the live ZPH02 is experimental.
-        dataset_pm25 = round(0.4826716982549565 * pm25 + 6.554140236696278, 2)
+        modeled_pm25 = 0.4826716982549565 * pm25 + 6.554140236696278
+        dataset_pm25 = round(modeled_pm25, 2)
+        dataset_aqi_precise = round(calculate_aqi_float(modeled_pm25), 1)
         dataset_extrapolated = not 5.65 <= pm25 <= 210.95
     return jsonify(
-        dataset_estimated_pm25=dataset_pm25, dataset_estimated_aqi=calculate_aqi(dataset_pm25),
+        dataset_estimated_pm25=dataset_pm25,
+        dataset_estimated_aqi=calculate_aqi(dataset_pm25),
+        dataset_estimated_aqi_precise=dataset_aqi_precise,
         dataset_extrapolated=dataset_extrapolated,
+        pm25_fresh=pm25_fresh,
+        pm25_age_seconds=round(age, 1) if age is not None else None,
+        raw_aqi_precise=round(calculate_aqi_float(pm25), 1) if pm25 is not None else None,
         pm25=pm25, mq135=mq135, zph02_lpr_pct=lpr,
         calibrated_pm25=calibrated_pm25, calibrated_aqi=calibrated_aqi,
         calibration_status=calibration_status,
@@ -380,7 +400,7 @@ def live_calibrated_estimate(raw_zph02_pm25):
     if raw_zph02_pm25 is None:
         return None, None, 'waiting_for_zph02_pm25'
     age = latest_valid_pm25_age_seconds()
-    if age is None or age > 300 or age < -60:
+    if age is None or age > SENSOR_STALE_SECONDS or age < -60:
         return None, None, 'stale_zph02_pm25'
     if not os.path.exists(VALIDATED_ZPH02_MODEL):
         return None, None, 'awaiting_paired_zph02_reference_calibration'
